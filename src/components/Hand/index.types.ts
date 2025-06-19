@@ -1,10 +1,11 @@
-import { ReactNode } from "react";
+import type { Status } from '@/types';
+import { ReactNode } from 'react';
 
 export interface HandProps {
   children: ReactNode;
   currentTurn: boolean;
   index: number;
   isWinner: boolean;
-  text: string;
+  status?: Status;
   total: number;
 }

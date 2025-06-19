@@ -1,5 +1,4 @@
-import { css } from "@emotion/css";
-import bgCard from "@/assets/bg-card.png";
+import { css } from '@emotion/css';
 
 export const card = css`
   all: unset;
@@ -47,7 +46,8 @@ export const front = css`
 export const back = css`
   ${inner};
   justify-content: center;
-  background-image: url(${bgCard});
+  background-color: white;
+  background-image: url('card.png');
   border: calc(6px / var(--scale, 2)) solid #9444cf;
 `;
 

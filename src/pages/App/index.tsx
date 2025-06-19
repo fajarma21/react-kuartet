@@ -1,17 +1,24 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from 'react';
 
-import Card from "@/components/Card";
-import Hand from "@/components/Hand";
-import { CARDS } from "@/constants";
-import { CardData, Turn } from "@/types";
+import Card from '@/components/Card';
+import Hand from '@/components/Hand';
+import {
+  CARDS,
+  STATUS_ACTION,
+  STATUS_COLLECT,
+  STATUS_DRAW,
+  STATUS_NONE,
+  STATUS_SELECT,
+} from '@/constants';
+import { CardData, Status, Turn } from '@/types';
 
-import DrawPile from "./components/DrawPile";
-import Kuartets from "./components/Kuartets";
-import { randomTurn, shuffle } from "./index.helpers";
-import * as css from "./index.styles";
-import { HandData } from "./index.types";
-import ActionButtons from "./components/ActionButtons";
-import { KUARTET, PLAYER, START_CARDS } from "./index.constants";
+import ActionButtons from './components/ActionButtons';
+import DrawPile from './components/DrawPile';
+import Kuartets from './components/Kuartets';
+import { KUARTET, PLAYER, START_CARDS } from './index.constants';
+import { randomTurn, shuffle } from './index.helpers';
+import * as css from './index.styles';
+import { HandData } from './index.types';
 
 const App = () => {
   const [turn, setTurn] = useState(-1);
@@ -19,7 +26,7 @@ const App = () => {
   const [hands, setHands] = useState<HandData[]>([]);
   const [winner, setWinner] = useState(-1);
   const [isFinished, setIsFinished] = useState(false);
-  const [statusText, setStatusText] = useState("");
+  const [status, setStatus] = useState<Status>();
   const [selectedType, setSelectedType] = useState(0);
   const [drawTurn, setDrawTurn] = useState<Turn>(-1);
 
@@ -67,7 +74,7 @@ const App = () => {
     removeDrawPile(PLAYER * START_CARDS);
     setTurn(randomTurn(PLAYER));
 
-    setStatusText("Select or Draw a card?");
+    setStatus({ type: STATUS_ACTION });
   };
 
   const handleNextTurn = useCallback(
@@ -85,11 +92,11 @@ const App = () => {
 
         if (!currentPile.length && !hands[nextTurn].cards.length) {
           setIsFinished(true);
-          setStatusText("");
+          setStatus(undefined);
           return;
         }
 
-        setStatusText("Select or Draw a card?");
+        setStatus({ type: STATUS_ACTION });
       }, 1000);
     },
     [hands, turn]
@@ -150,7 +157,7 @@ const App = () => {
 
   const handleDraw = useCallback(() => {
     setAlreadyDraw(true);
-    setStatusText("Draw a card");
+    setStatus({ type: STATUS_DRAW });
 
     const newCards = hands.map((item, idx) => {
       if (turn === idx) {
@@ -171,9 +178,14 @@ const App = () => {
   }, [checkKuartet, drawPile, handleNextTurn, hands, removeDrawPile, turn]);
 
   const handleSelect = useCallback(
-    (type: number, text: string) => {
-      setStatusText(`Select ${text}`);
-      setSelectedType(type);
+    (data: CardData) => {
+      const cardValues = JSON.stringify({
+        color: data.color,
+        text: data.text,
+        textColor: data.textColor,
+      });
+      setStatus({ type: STATUS_SELECT, values: cardValues });
+      setSelectedType(data.type);
 
       setTimeout(() => {
         setSelectedType(0);
@@ -186,7 +198,7 @@ const App = () => {
             const sameType: CardData[] = [];
             for (let j = 0; j < hand.cards.length; j++) {
               const item = hand.cards[j];
-              if (item.type === type) sameType.push(item);
+              if (item.type === data.type) sameType.push(item);
             }
             hand.cards = hand.cards.filter(
               (handCard) =>
@@ -198,11 +210,13 @@ const App = () => {
         }
 
         if (allSameType.length) {
-          setStatusText(
-            `Get ${allSameType.length} ${text} card${
-              allSameType.length > 1 ? "s" : ""
-            }`
-          );
+          setStatus({
+            type: STATUS_COLLECT,
+            values: JSON.stringify({
+              ...JSON.parse(cardValues),
+              length: allSameType.length,
+            }),
+          });
           const newHands = tempHands.map((newHand, idx) => {
             if (idx === turn) {
               return {
@@ -216,7 +230,7 @@ const App = () => {
           setHands(newHands);
           checkKuartet(newHands[turn].cards, turn);
         } else {
-          setStatusText(`No one have ${text} card`);
+          setStatus({ type: STATUS_NONE, values: cardValues });
         }
 
         handleNextTurn(drawPile);
@@ -238,7 +252,7 @@ const App = () => {
           );
 
           const randomCard = currentHand.cards[randomIndex];
-          handleSelect(randomCard.type, randomCard.text);
+          handleSelect(randomCard);
         } else handleDraw();
       }, randomNumber);
     } else {
@@ -283,7 +297,7 @@ const App = () => {
             currentTurn={!isFinished && currentTurn}
             index={index}
             isWinner={isFinished && items.kuartets.length === winner}
-            text={currentTurn ? statusText : ""}
+            status={currentTurn ? status : undefined}
             total={items.cards.length}
           >
             <Kuartets items={items.kuartets} />
@@ -296,7 +310,7 @@ const App = () => {
                   disabled={turn !== index || isFinished || Boolean(turn)}
                   flip={!isMainPlayer}
                   selected={selectedType === item.type && !currentTurn}
-                  onClick={() => handleSelect(item.type, item.text)}
+                  onClick={() => handleSelect(item)}
                 />
               ))}
             </>
