@@ -4,7 +4,7 @@ import { defineConfig } from 'vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/react-quartet/',
+  base: '/react-kuartet/',
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
