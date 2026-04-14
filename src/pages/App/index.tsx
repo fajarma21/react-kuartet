@@ -30,7 +30,7 @@ const App = () => {
   const [selectedType, setSelectedType] = useState(0);
   const [drawTurn, setDrawTurn] = useState<Turn>(-1);
 
-  const [alreadyDraw, setAlreadyDraw] = useState(false);
+  const [actionDone, setActionDone] = useState(false);
   const [botId, setBotId] = useState(0);
 
   const handleShuffle = useCallback(() => {
@@ -43,7 +43,7 @@ const App = () => {
       [...Array(PLAYER)].map(() => ({
         cards: [],
         kuartets: [],
-      }))
+      })),
     );
 
     setWinner(-1);
@@ -81,7 +81,7 @@ const App = () => {
     (currentPile: CardData[]) => {
       setTimeout(() => {
         setDrawTurn(-1);
-        setAlreadyDraw(false);
+        setActionDone(false);
         setBotId(0);
         setSelectedType(0);
 
@@ -99,7 +99,7 @@ const App = () => {
         setStatus({ type: STATUS_ACTION });
       }, 1000);
     },
-    [hands, turn]
+    [hands, turn],
   );
 
   const checkKuartet = useCallback(
@@ -129,7 +129,7 @@ const App = () => {
             return {
               ...hand,
               cards: hand.cards.filter(
-                (card) => !kuartets.find((item) => item.type === card.type)
+                (card) => !kuartets.find((item) => item.type === card.type),
               ),
               kuartets: [...hand.kuartets, ...kuartets],
             };
@@ -142,7 +142,7 @@ const App = () => {
         setHands(newHands);
       }
     },
-    [hands, winner]
+    [hands, winner],
   );
 
   const removeDrawPile = useCallback(
@@ -152,11 +152,11 @@ const App = () => {
 
       return newDrawPile;
     },
-    [drawPile]
+    [drawPile],
   );
 
   const handleDraw = useCallback(() => {
-    setAlreadyDraw(true);
+    setActionDone(true);
     setStatus({ type: STATUS_DRAW });
 
     const newCards = hands.map((item, idx) => {
@@ -179,6 +179,8 @@ const App = () => {
 
   const handleSelect = useCallback(
     (data: CardData) => {
+      setActionDone(true);
+
       const cardValues = JSON.stringify({
         color: data.color,
         text: data.text,
@@ -202,7 +204,7 @@ const App = () => {
             }
             hand.cards = hand.cards.filter(
               (handCard) =>
-                !sameType.find((card) => card.type === handCard.type)
+                !sameType.find((card) => card.type === handCard.type),
             );
             allSameType.push(...sameType);
           }
@@ -236,7 +238,7 @@ const App = () => {
         handleNextTurn(drawPile);
       }, 1000);
     },
-    [checkKuartet, drawPile, handleNextTurn, hands, turn]
+    [checkKuartet, drawPile, handleNextTurn, hands, turn],
   );
 
   const botTurn = useCallback(() => {
@@ -248,7 +250,7 @@ const App = () => {
       setTimeout(() => {
         if (randomNumber % 2 || !drawPile.length) {
           const randomIndex = Math.floor(
-            Math.random() * currentHand.cards.length
+            Math.random() * currentHand.cards.length,
           );
 
           const randomCard = currentHand.cards[randomIndex];
@@ -268,7 +270,9 @@ const App = () => {
     }
   }, [botTurn, turn, isFinished, botId]);
 
-  const disableDraw = drawPile.length === CARDS.length || !!turn || alreadyDraw;
+  const disableAction = !!turn || actionDone;
+  const disableDraw = disableAction || drawPile.length === CARDS.length;
+  const disablePick = disableAction || isFinished;
   return (
     <>
       <div className={css.centerTable}>
@@ -307,7 +311,7 @@ const App = () => {
                   key={`card-${item.id}`}
                   {...item}
                   className={css.handCard}
-                  disabled={turn !== index || isFinished || Boolean(turn)}
+                  disabled={disablePick}
                   flip={!isMainPlayer}
                   selected={selectedType === item.type && !currentTurn}
                   onClick={() => handleSelect(item)}
